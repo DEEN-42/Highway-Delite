@@ -79,7 +79,7 @@ export const getPromoCode = async (req, res) => {
   }
 };
 
-// Get all promo codes (Admin)
+// Get all promo codes 
 export const getAllPromoCodes = async (req, res) => {
   try {
     const { isActive } = req.query;

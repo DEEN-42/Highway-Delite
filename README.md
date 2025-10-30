@@ -2,7 +2,7 @@
 
 
 
-A full-stack MERN application for booking adventure and travel experiences. Built with Next.js 15, TypeScript, Express.js, and MongoDB.A full-stack MERN application for booking adventure and travel experiences. Built with Next.js 15, TypeScript, Express.js, and MongoDB.
+A full-stack web application for booking adventure and travel experiences. Built with Next.js 15, TypeScript, Express.js, and MongoDB.A full-stack MERN application for booking adventure and travel experiences. Built with Next.js 15, TypeScript, Express.js, and MongoDB.
 
 
 
@@ -16,15 +16,17 @@ A full-stack MERN application for booking adventure and travel experiences. Buil
 
 ![Express](https://img.shields.io/badge/Express-5.1.0-lightgrey?style=flat&logo=express)![Express](https://img.shields.io/badge/Express-5.1.0-lightgrey?style=flat&logo=express)
 
-![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?style=flat&logo=mongodb)![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?style=flat&logo=mongodb)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?style=flat&logo=mongodb)
 
+---
 
+## 🌐 Live Demo
 
-------
+**🚀 [View Live Application](https://highway-delite-assignment-debanshu.vercel.app/)**
 
+---
 
-
-## 📋 Table of Contents## 📋 Table of Contents
+## 📋 Table of Contents
 
 
 

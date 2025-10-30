@@ -13,7 +13,7 @@ const router = express.Router();
 // Public route
 router.post('/validate', validatePromoCode);
 
-//Get all promo codes
+// Get all promo codes
 router.get('/', getAllPromoCodes);
 
 router.get('/:code', getPromoCode);

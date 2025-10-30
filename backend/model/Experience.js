@@ -52,12 +52,12 @@ const experienceSchema = new mongoose.Schema({
   availableDates: [{
     date: {
       type: String,
-      required: true // "2025-11-15", "2025-11-16", etc. (YYYY-MM-DD format)
+      required: true 
     },
     times: [{
       time: {
         type: String,
-        required: true // "07:00 am", "09:00 am", etc.
+        required: true 
       },
       totalSlots: {
         type: Number,
