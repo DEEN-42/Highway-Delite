@@ -19,6 +19,13 @@ const experienceSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  taxRate: {
+    type: Number,
+    required: true,
+    default: 0.18, // 18% GST
+    min: 0,
+    max: 1
+  },
   image: {
     type: String,
     required: true
@@ -45,7 +52,7 @@ const experienceSchema = new mongoose.Schema({
   availableDates: [{
     date: {
       type: String,
-      required: true // "Oct 22", "Oct 23", etc.
+      required: true // "2025-11-15", "2025-11-16", etc. (YYYY-MM-DD format)
     },
     times: [{
       time: {

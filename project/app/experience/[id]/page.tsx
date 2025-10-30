@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { ArrowLeft, Minus, Plus } from 'lucide-react';
 import Search from '@/components/header/Search';
 import { useBooking } from '@/context/BookingContext';
+import toast, { Toaster } from 'react-hot-toast';
+import { formatDateForDisplay } from '@/lib/dateUtils';
 
 interface TimeSlot {
   time: string;
@@ -24,6 +26,7 @@ interface ExperienceData {
   description: string;
   location: string;
   price: number;
+  taxRate: number;
   image: string;
   category: string;
   aboutText: string;
@@ -32,7 +35,7 @@ interface ExperienceData {
   availability: AvailableDate[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3030';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ExperienceDetails() {
   const params = useParams();
@@ -62,23 +65,12 @@ export default function ExperienceDetails() {
         
         if (result.success && result.data) {
           setExperience(result.data);
-          
-          // Set default selections
-          if (result.data.availability && result.data.availability.length > 0) {
-            setSelectedDate(result.data.availability[0].date);
-            if (result.data.availability[0].times && result.data.availability[0].times.length > 0) {
-              const firstAvailableTime = result.data.availability[0].times.find((t: TimeSlot) => t.slots > 0);
-              if (firstAvailableTime) {
-                setSelectedTime(firstAvailableTime.time);
-              }
-            }
-          }
         } else {
           throw new Error('Invalid API response');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-        console.error('Error fetching experience:', err);
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -93,9 +85,16 @@ export default function ExperienceDetails() {
     return (
       <div className="min-h-screen bg-[#F9F9F9]">
         <Search functional={false} />
-        <main className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-center h-64">
-            <p className="text-[#161616] text-lg">Loading experience details...</p>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-6">
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-0 border-4 border-[#FFD643] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-[#161616] text-lg font-medium">Loading Experience Details</p>
+              <p className="text-[#656565] text-sm">Please wait while we fetch the information...</p>
+              <p className="text-[#838383] text-xs font-mono mt-4">Experience ID: {id}</p>
+            </div>
           </div>
         </main>
       </div>
@@ -106,16 +105,31 @@ export default function ExperienceDetails() {
     return (
       <div className="min-h-screen bg-[#F9F9F9]">
         <Search functional={false} />
-        <main className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-center h-64">
-            <p className="text-red-600 text-lg">Error: {error || 'Experience not found'}</p>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-6">
+            <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+              <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <div className="text-center space-y-2 max-w-md">
+              <p className="text-red-600 text-xl font-semibold">Error Loading Experience</p>
+              <p className="text-[#656565] text-sm">{error || 'Experience not found or no longer available'}</p>
+              
+              <button
+                onClick={() => router.push('/')}
+                className="mt-6 px-6 py-3 bg-[#FFD643] text-[#161616] rounded-lg font-medium hover:bg-[#ffd020] transition-colors"
+              >
+                Back to Home
+              </button>
+            </div>
           </div>
         </main>
       </div>
     );
   }
 
-  const taxRate = 0.059;
+  const taxRate = experience.taxRate;
   const subtotal = experience.price * quantity;
   const taxes = Math.round(subtotal * taxRate);
   const total = subtotal + taxes;
@@ -124,9 +138,19 @@ export default function ExperienceDetails() {
   const availableTimes = selectedDateData?.times || [];
 
   const handleConfirm = () => {
-    if (!experience || !selectedDate || !selectedTime) return;
+    if (!selectedDate) {
+      toast.error('Please select a date');
+      return;
+    }
 
-    const taxRate = 0.059;
+    if (!selectedTime) {
+      toast.error('Please select a time slot');
+      return;
+    }
+
+    if (!experience) return;
+
+    const taxRate = experience.taxRate;
     const subtotal = experience.price * quantity;
     const taxes = Math.round(subtotal * taxRate);
     const total = subtotal + taxes;
@@ -143,18 +167,46 @@ export default function ExperienceDetails() {
       total
     });
 
-    // Navigate to booking page
-    router.push(`/booking/${experience._id}`);
+    setTimeout(() => {
+      router.push(`/booking/${experience._id}`);
+    }, 500);
   };
 
   return (
     <div className="min-h-screen bg-[#F9F9F9]">
+      <Toaster 
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#fff',
+            color: '#161616',
+            padding: '16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+          success: {
+            style: {
+              background: '#10b981',
+              color: '#fff',
+            },
+          },
+          error: {
+            style: {
+              background: '#ef4444',
+              color: '#fff',
+            },
+          },
+        }}
+      />
       <Search functional={false} />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <Link
           href="/"
-          className="inline-flex items-center gap-[8px] w-[74px] h-[20px]"
+          className="inline-flex items-center gap-[8px] mb-4 sm:mb-6"
         >
           <div className="relative w-[20px] h-[20px]">
             <ArrowLeft 
@@ -162,16 +214,16 @@ export default function ExperienceDetails() {
             />
           </div>
           <span 
-            className="font-medium text-[#000000] text-[14px] leading-[18px] w-[46px] h-[18px]"
+            className="font-medium text-[#000000] text-[14px] leading-[18px]"
           >
             Details
           </span>
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           <div className="lg:col-span-2">
             <div 
-              className="relative rounded-xl overflow-hidden mb-8 w-[765px] h-[381px]"
+              className="relative rounded-xl overflow-hidden mb-6 sm:mb-8 w-full h-[250px] sm:h-[350px] lg:h-[381px]"
             >
               <Image
                 src={experience.image}
@@ -182,51 +234,45 @@ export default function ExperienceDetails() {
             </div>
 
             <div 
-              className="flex flex-col w-[765px] h-[406px] gap-[32px]"
+              className="flex flex-col w-full gap-6 sm:gap-8"
             >
               <div 
-                className="flex flex-col w-[765px] h-[96px] gap-[16px]"
+                className="flex flex-col w-full gap-[16px]"
               >
-                <h1 className="text-3xl font-bold">{experience.title}</h1>
-                <p className="text-gray-600">
+                <h1 className="text-2xl sm:text-3xl font-bold">{experience.title}</h1>
+                <p className="text-gray-600 text-sm sm:text-base">
                   {experience.description}
                 </p>
               </div>
 
               <div 
-                className="flex flex-col w-[765px] h-[278px] gap-[24px]"
+                className="flex flex-col w-full gap-[24px]"
               >
                 <div>
-                  <h2 className="text-xl font-semibold mb-4">Choose date</h2>
-                  <div className="flex gap-3 flex-wrap">
+                  <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Choose date</h2>
+                  <div className="flex gap-2 sm:gap-3 flex-wrap">
                     {experience.availability.map((dateData) => (
                       <button
                         key={dateData.date}
                         onClick={() => {
                           setSelectedDate(dateData.date);
-                          // Reset time selection when date changes
-                          const firstAvailableTime = dateData.times.find(t => t.slots > 0);
-                          if (firstAvailableTime) {
-                            setSelectedTime(firstAvailableTime.time);
-                          } else {
-                            setSelectedTime('');
-                          }
+                          setSelectedTime('');
                         }}
-                        className={`px-5 py-2 rounded border transition-colors ${
+                        className={`px-3 sm:px-5 py-2 rounded border transition-colors text-sm sm:text-base ${
                           selectedDate === dateData.date
                             ? 'bg-[#FFD643] border-[#FFD643] text-black font-medium'
                             : 'bg-white border-gray-300 text-[#838383] hover:border-gray-400'
                         }`}
                       >
-                        {dateData.date}
+                        {formatDateForDisplay(dateData.date)}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <h2 className="text-xl font-semibold mb-4">Choose time</h2>
-                  <div className="flex gap-3 flex-wrap">
+                  <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Choose time</h2>
+                  <div className="flex gap-2 sm:gap-3 flex-wrap">
                     {availableTimes.map((timeSlot) => (
                       <button
                         key={timeSlot.time}
@@ -234,7 +280,7 @@ export default function ExperienceDetails() {
                           timeSlot.slots > 0 && setSelectedTime(timeSlot.time)
                         }
                         disabled={timeSlot.slots === 0}
-                        className={`px-5 py-2 rounded border transition-colors relative ${
+                        className={`min-w-[140px] px-3 sm:px-4 py-2 rounded border transition-colors flex items-center justify-center text-sm sm:text-base ${
                           selectedTime === timeSlot.time
                             ? 'bg-[#FFD643] border-[#FFD643] text-black font-medium'
                             : timeSlot.slots === 0
@@ -242,10 +288,10 @@ export default function ExperienceDetails() {
                             : 'bg-white border-gray-300 text-[#838383] hover:border-gray-400'
                         }`}
                       >
-                        {timeSlot.time}
-                        {timeSlot.slots > 0 && timeSlot.slots <= 4 && (
+                        <span className="whitespace-nowrap">{timeSlot.time}</span>
+                        {timeSlot.slots > 0 && timeSlot.slots <= 5 && (
                           <span
-                            className={`ml-2 text-xs ${
+                            className={`ml-1 sm:ml-2 text-xs whitespace-nowrap ${
                               selectedTime === timeSlot.time
                                 ? 'text-red-600'
                                 : 'text-red-500'
@@ -255,22 +301,22 @@ export default function ExperienceDetails() {
                           </span>
                         )}
                         {timeSlot.slots === 0 && (
-                          <span className="ml-2 text-xs text-gray-500">
+                          <span className="ml-1 sm:ml-2 text-xs text-gray-500 whitespace-nowrap">
                             Sold out
                           </span>
                         )}
                       </button>
                     ))}
                   </div>
-                  <p className="text-sm text-gray-500 mt-3">
+                  <p className="text-xs sm:text-sm text-gray-500 mt-2 sm:mt-3">
                     All times are in IST (GMT +5:30)
                   </p>
                 </div>
 
-                <div className="w-[765px] h-[66px] gap-[12px] flex flex-col">
-                  <h2 className="text-xl font-semibold">About</h2>
-                  <div className="w-[765px] h-[32px] rounded gap-[10px] pt-[8px] pr-[12px] pb-[8px] pl-[12px] bg-[#EEEEEE]">
-                    <p className="text-[#838383] text-[12px] leading-[16px] font-normal">
+                <div className="w-full gap-[12px] flex flex-col">
+                  <h2 className="text-lg sm:text-xl font-semibold">About</h2>
+                  <div className="w-full rounded gap-[10px] pt-[8px] pr-[12px] pb-[8px] pl-[12px] bg-[#EEEEEE]">
+                    <p className="text-[#838383] text-[12px] leading-[16px] font-normal break-words">
                       {experience.aboutText} Minimum age {experience.minAge}. Duration: {experience.duration}.
                     </p>
                   </div>
@@ -281,33 +327,31 @@ export default function ExperienceDetails() {
 
           <div className="lg:col-span-1">
             <div 
-              className="bg-white rounded-xl p-[24px] w-[387px] h-[303px] gap-[24px]"
+              className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-[387px] mx-auto lg:mx-0"
             >
               <div 
-                className="flex flex-col w-[339px] h-[187px] gap-[16px]"
+                className="flex flex-col w-full gap-[16px]"
               >
-                {/* Starts at */}
                 <div 
-                  className="flex justify-between items-center w-[339px] h-[20px]"
+                  className="flex justify-between items-center w-full"
                 >
                   <span 
-                    className="text-[#656565] text-[16px] leading-[20px] font-normal w-[65px] h-[20px]"
+                    className="text-[#656565] text-sm sm:text-[16px] leading-[20px] font-normal"
                   >
                     Starts at
                   </span>
                   <span 
-                    className="text-[#161616] text-[18px] font-medium"
+                    className="text-[#161616] text-base sm:text-[18px] font-medium"
                   >
                     ₹{experience.price}
                   </span>
                 </div>
 
-                {/* Quantity */}
                 <div 
-                  className="flex justify-between items-center w-[339px] h-[20px]"
+                  className="flex justify-between items-center w-full"
                 >
                   <span 
-                    className="text-[#656565] text-[16px] leading-[20px] font-normal"
+                    className="text-[#656565] text-sm sm:text-[16px] leading-[20px] font-normal"
                   >
                     Quantity
                   </span>
@@ -334,67 +378,73 @@ export default function ExperienceDetails() {
                   </div>
                 </div>
 
-                {/* Subtotal */}
                 <div 
-                  className="flex justify-between items-center w-[339px] h-[20px]"
+                  className="flex justify-between items-center w-full"
                 >
                   <span 
-                    className="text-[#656565] text-[16px] leading-[20px] font-normal"
+                    className="text-[#656565] text-sm sm:text-[16px] leading-[20px] font-normal"
                   >
                     Subtotal
                   </span>
                   <span 
-                    className="text-[#161616] text-[14px] font-normal"
+                    className="text-[#161616] text-sm sm:text-[14px] font-normal"
                   >
                     ₹{subtotal}
                   </span>
                 </div>
 
-                {/* Taxes */}
                 <div 
-                  className="flex justify-between items-center w-[339px] h-[20px]"
+                  className="flex justify-between items-center w-full"
                 >
                   <span 
-                    className="text-[#656565] text-[16px] leading-[20px] font-normal"
+                    className="text-[#656565] text-sm sm:text-[16px] leading-[20px] font-normal"
                   >
                     Taxes
                   </span>
                   <span 
-                    className="text-[#161616] text-[14px] font-normal"
+                    className="text-[#161616] text-sm sm:text-[14px] font-normal"
                   >
                     ₹{taxes}
                   </span>
                 </div>
 
-                {/* Total */}
                 <div 
-                  className="flex justify-between items-center w-[339px] h-[24px]"
+                  className="flex justify-between items-center w-full"
                 >
                   <span 
-                    className="text-[#161616] text-[20px] leading-[24px] font-medium w-[48px] h-[24px]"
+                    className="text-[#161616] text-lg sm:text-[20px] leading-[24px] font-medium"
                   >
                     Total
                   </span>
                   <span 
-                    className="text-[#161616] text-[20px] leading-[24px] font-medium"
+                    className="text-[#161616] text-lg sm:text-[20px] leading-[24px] font-medium"
                   >
                     ₹{total}
                   </span>
                 </div>
               </div>
 
-              {/* Confirm Button */}
               <button 
                 onClick={handleConfirm}
                 disabled={!selectedDate || !selectedTime}
-                className="group rounded-lg bg-[#D7D7D7] hover:bg-[#FFD643] transition-colors flex items-center justify-center w-[339px] h-[44px] px-[20px] py-[12px] mt-[24px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group rounded-lg bg-[#D7D7D7] hover:bg-[#FFD643] transition-colors flex items-center justify-center w-full h-[44px] px-[20px] py-[12px] mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span 
-                  className="text-[#7F7F7F] group-hover:text-[#161616] text-[16px] leading-[20px] transition-colors font-medium"
+                  className="text-[#7F7F7F] group-hover:text-[#161616] text-sm sm:text-[16px] leading-[20px] transition-colors font-medium"
                 >
                   Confirm
                 </span>
               </button>
+              
+              {(!selectedDate || !selectedTime) && (
+                <p className="text-xs text-[#838383] text-center mt-2">
+                  {!selectedDate && !selectedTime 
+                    ? 'Please select a date and time to continue'
+                    : !selectedDate 
+                    ? 'Please select a date'
+                    : 'Please select a time slot'}
+                </p>
+              )}
             </div>
           </div>
         </div>

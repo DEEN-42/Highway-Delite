@@ -13,8 +13,9 @@ const router = express.Router();
 // Public route
 router.post('/validate', validatePromoCode);
 
-// Admin routes (add authentication middleware here in production)
+//Get all promo codes
 router.get('/', getAllPromoCodes);
+
 router.get('/:code', getPromoCode);
 router.post('/', createPromoCode);
 router.put('/:id', updatePromoCode);
